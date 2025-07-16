@@ -23,4 +23,11 @@ app.use(express.static("public"));
 //cookie parser is used to read imp cookies from users browser and update them as well, basically performing CRUD ops over the users cookies
 app.use(cookieParser());
 
-export { app };
+
+
+//routes import
+import userRoute from './routes/user.routes.js'
+
+//routes declaration: its a middleware, so we have to use app.use()
+app.use("/api/v1/users", userRoute) //this creates the url: http://localhost:8000/api/v1/users/register
+export { app }
