@@ -15,8 +15,12 @@ const registerUser = asyncHandler(async (req, res) => {
     // check for user creation
     // return response
 
+    // Debug: Check what we're receiving
+    console.log("req.body:", req.body);
+    console.log("req.files:", req.files);
+    console.log("Content-Type:", req.headers['content-type']);
 
-    const { email, fullName, username, password } = req.body
+    const { email, fullName, username, password } = req.body || {};
     console.log("email: ", email);
     if (email === "") {
         throw new ApiError(400, "This field is Mandatory")
@@ -34,7 +38,7 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "This field is Mandatory")
     }
 
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [{ username }, { email }]
     })
     if (existedUser) {
@@ -43,7 +47,16 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+    //if we didnt uploaded coverImg and did'nt even check its local path then it can trow an error, so to resolve it we ::
+
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
+
 
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required")
@@ -74,14 +87,14 @@ const registerUser = asyncHandler(async (req, res) => {
     )
 
 
-if(!createdUser){
-    throw new ApiError(500, "Something went wrong hwile registering the user")
-}
+    if (!createdUser) {
+        throw new ApiError(500, "Something went wrong hwile registering the user")
+    }
 
 
-return res.status(201).json(
-    new ApiResponse(200, createdUser, "User registered Successfuly")
-)
+    return res.status(201).json(
+        new ApiResponse(200, createdUser, "User registered Successfuly")
+    )
 
 })
 
