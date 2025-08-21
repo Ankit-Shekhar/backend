@@ -23,7 +23,7 @@ const videoSchema = new Schema(
             type: Number, //cloudinary url
             required: true
         },
-        duration: {
+        views: {
             type: Number,
             default: 0
         },
@@ -38,9 +38,9 @@ const videoSchema = new Schema(
         refreshToken: {}
     },
     {
-        timestamps: true, //createdAt and updatedAt fields
+        timestamps: true //createdAt and updatedAt fields
     }
 );
 
-videoSchema.plugin(mongooseAggregatePaginate);
+videoSchema.plugin(mongooseAggregatePaginate); // adding this enables us to write aggregation queries
 export const Video = mongoose.model("Video", videoSchema);
