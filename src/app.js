@@ -28,8 +28,9 @@ app.use(cookieParser());
 
 
 //routes import
-import userRoute from './routes/user.routes.js'
+import userRouter from './routes/user.routes.js'
 
-//routes declaration: its a middleware, so we have to use app.use()
-app.use("/api/v1/users", userRoute) //this creates the url: http://localhost:8000/api/v1/users/register
+//as now we have separated routes and controllers, so we have to import the routes as Middlewares, and so we use "app.use()"
+//when the "users" endpoint will be hitted the control will be passed to "userRouter" and it will take us to "user.route.js"
+app.use("/api/v1/users", userRouter) //this creates the url: http://localhost:8000/api/v1/users/register
 export { app }
