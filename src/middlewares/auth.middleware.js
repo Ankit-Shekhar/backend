@@ -1,9 +1,9 @@
-import { ApiError } from "../utils/ApiErrors";
-import { asyncHandler } from "../utils/asyncHandler";
+import { ApiError } from "../utils/ApiErrors.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken"
 import { User } from "../models/user.model.js"
 
-// below we are using req,next but the res is remaining empty, so it can also be written as (req, _, next) this syntax is also correct.
+// below we are using req,next but the res is remaining empty, so it can also be written as (req, _, next) this syntax is also
 export const verifyJWT = asyncHandler(async (req, res, next) => {
     try {
         // getting access of accessToken through cookies and req.header is done for "mobiles" because their we dont have direct access to cookies
