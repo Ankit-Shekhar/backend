@@ -286,4 +286,150 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 })
 
-export { registerUser, loginUser, logoutUser,refreshAccessToken } 
+
+// start copy work from here::
+// before running this function we will inject the "verifyJWT" middleware in the route section, so from their we will get the access of all the details of the user.
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+    // accessing old and new password from req.body
+    const { oldPassword, newPassword } = req.body
+
+    // getting access to all the details of the user, here we are not excluding password and refreshToken, so we have access to them as well.
+    const user = await User.findById(req.user?._id)
+
+    // comapiring oldPassword with password saved in DB
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+
+    if (!isPasswordCorrect) {
+        throw new ApiError(400, "Invalid old password")
+    }
+
+    // updating Db's password field with newPassword.
+    user.password = newPassword
+
+    await user.save({ validateBeforeSave: false })
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Password changed successfully"))
+
+})
+
+// fetching (get) current user
+const getCurrentUser = asyncHandler(async (req, res) => {
+    return res
+        .status(200)
+        .json(200, req.user, "Current user fetched successfully")
+})
+
+// updating text data 
+const updateAccountDetails = asyncHandler(async (req, res) => {
+    // here the developers allow what data must be given access to the user to modify. Here i am allowing "fullName, email"
+    // taking this data from frontend
+    const { fullName, email } = req.body
+    if (!fullName || !email) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+    const user = User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set:
+            {   // here left side "fullName:" is whats their in Db and right side "fullName" is what we will        provide from frontend and same for email.
+                fullName: fullName,
+                email: email
+            }
+        },
+        { new: true }
+    ).select("-password")
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, user, "Account details updated sucessfully"))
+})
+
+// updating files data: here, we have to use 2 middlewares: 
+// 1. multer: to accept the files 
+// 2. verifyJWT: only those users can modify files who are logged in
+// we will inject these 2 middlewares while routing, here just write the controller
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+    // when we will inject multer middleware form their we will get access to files, so here we can use "req.files" and "req.file"
+    // we will get the file path and store it in "avatarLocalPath"
+    const avatarLocalPath = req.file?.path
+
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is missing")
+    }
+    // upload the file on "Cloudinary", after uploading, "Cloudinary" gives its url 
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+
+    if (!avatar.url) {
+        throw new ApiError(400, "Error while uploading on Cloudinary")
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set:
+            {
+                avatar: avatar.url
+            }
+        },
+        {
+            new: true
+        }
+    ).select("-password")
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, user, "Avatar Image uploaded successfully")
+        )
+})
+
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+    // when we will inject multer middleware form their we will get access to files, so here we can use "req.files" and "req.file"
+    // we will get the file path and store it in "avatarLocalPath"
+    const coverImageLocalPath = req.file?.path
+
+    if (!coverImageLocalPath) {
+        throw new ApiError(400, "Cover Image file is missing")
+    }
+    // upload the file on "Cloudinary", after uploading, "Cloudinary" gives its url 
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
+
+    if (!coverImage.url) {
+        throw new ApiError(400, "Error while uploading on Cloudinary")
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set:
+            {
+                coverImage: coverImage.url
+            }
+        },
+        {
+            new: true
+        }
+    ).select("-password")
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, user, "Cover Image uploaded successfully")
+        )
+})
+
+export {
+    registerUser,
+    loginUser,
+    logoutUser,
+    refreshAccessToken,
+    changeCurrentPassword,
+    getCurrentUser,
+    updateAccountDetails,
+    updateUserAvatar,
+    updateUserCoverImage
+} 
