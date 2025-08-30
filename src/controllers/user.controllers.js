@@ -431,7 +431,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     // deleting old Cover Image file
     if (oldCoverImageUrlToBeDeleted) {
         await deleteFromCloudinary(usersOldCoverImageFile);
-    }
+    } 
 
     return res
         .status(200)
