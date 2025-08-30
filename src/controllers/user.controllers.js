@@ -287,7 +287,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 })
 
 
-// start copy work from here::
 // before running this function we will inject the "verifyJWT" middleware in the route section, so from their we will get the access of all the details of the user.
 const changeCurrentPassword = asyncHandler(async (req, res) => {
     // accessing old and new password from req.body
@@ -298,7 +297,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
     // comapiring oldPassword with password saved in DB
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
- 
+
     if (!isPasswordCorrect) {
         throw new ApiError(400, "Invalid old password")
     }
@@ -318,7 +317,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 const getCurrentUser = asyncHandler(async (req, res) => {
     return res
         .status(200)
-        .json(200, req.user, "Current user fetched successfully")
+        .json(new ApiResponse(200, req.user, "Current user fetched successfully"))
 })
 
 // updating text data 
@@ -330,7 +329,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required")
     }
 
-    const user = User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set:
