@@ -298,7 +298,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
     // comapiring oldPassword with password saved in DB
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
-
+ 
     if (!isPasswordCorrect) {
         throw new ApiError(400, "Invalid old password")
     }
@@ -334,7 +334,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         req.user?._id,
         {
             $set:
-            {   // here left side "fullName:" is whats their in Db and right side "fullName" is what we will        provide from frontend and same for email.
+            {   // here left side "fullName:" is whats their in Db and right side "fullName" is what we will provide from frontend and same for email.
                 fullName: fullName,
                 email: email
             }

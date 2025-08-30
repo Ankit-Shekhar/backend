@@ -19,3 +19,5 @@ const storage = multer.diskStorage({
 export const upload = multer({
     storage,
 })
+
+// after running this middleware we fet access to "req.files" and "req.file"
