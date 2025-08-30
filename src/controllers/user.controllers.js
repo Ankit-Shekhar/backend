@@ -366,6 +366,10 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Error while uploading on Cloudinary")
     }
 
+    // getting users old avatar files url for deleting it after updating it with new one.
+    const usersOldAvatarFile = await User.findById(req.user?._id);
+    const oldAvatarUrlToBeDeleted = usersOldAvatarFile?.avatar;
+
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
@@ -378,6 +382,12 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
             new: true
         }
     ).select("-password")
+
+    // deleting old Avatar file
+    if (oldAvatarUrlToBeDeleted) {
+        await deleteFromCloudinary(oldAvatarUrlToBeDeleted);
+    }
+
 
     return res
         .status(200)
@@ -401,6 +411,10 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Error while uploading on Cloudinary")
     }
 
+    // getting users old Cover Image files url for deleting it after updating it with new one.
+    const usersOldCoverImageFile = await User.findById(req.user?._id);
+    const oldCoverImageUrlToBeDeleted = usersOldCoverImageFile?.coverImage;
+
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
@@ -413,6 +427,11 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
             new: true
         }
     ).select("-password")
+
+    // deleting old Cover Image file
+    if (oldCoverImageUrlToBeDeleted) {
+        await deleteFromCloudinary(usersOldCoverImageFile);
+    }
 
     return res
         .status(200)

@@ -35,4 +35,31 @@ const uploadOnCloudinary = async (localFilePath) => {
         return null;
     }
 }
-export { uploadOnCloudinary }
+// Utility to delete a file from Cloudinary by its URL
+const deleteFromCloudinary = async (oldfileLocalPath_url) => {
+    try {
+        if (!oldfileLocalPath_url) return null;
+
+        // Extract the public ID from the URL
+        // Example: https://res.cloudinary.com/<cloud_name>/image/upload/v1234567890/folder/filename.jpg
+        // We need: folder/filename (without extension)
+
+        const urlParts = fileUrl.split("/");
+        // Remove version part (e.g., v1234567890)
+        const versionIndex = urlParts.findIndex(part => /^v\d+$/.test(part));
+        const publicIdParts = urlParts.slice(versionIndex + 1);
+        let publicId = publicIdParts.join("/");
+
+
+        // Remove file extension
+        publicId = publicId.replace(/\.[^/.]+$/, "");
+        // Call Cloudinary destroy
+        const result = await cloudinary.uploader.destroy(publicId, { resource_type: "auto" });
+        return result;
+    } catch (error) {
+        console.error("Errorin deleting file from Cloudinary:", error);
+        return null;
+    }
+}
+
+export { uploadOnCloudinary, deleteFromCloudinary }
