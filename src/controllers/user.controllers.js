@@ -11,9 +11,9 @@ const generateAccessAndRefreshTokens = async (userId) => {
     try {
         //finding the user in DB on the basis of "userId" and generating access and refresh token
         const user = await User.findById(userId)
-    // generate tokens (synchronous jwt.sign in model)
-    const accessToken = user.generateAccessToken()
-    const refreshToken = user.generateRefreshToken()
+        // generate tokens (synchronous jwt.sign in model)
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
 
         //saving refresh token in Db, when we try to save it in DB using "user" and not mongoose "User" then mongoose user model kicks in(password field) so to stop that we add "{validateBeforeSave: false}" to stop validating anything else.
         user.refreshToken = refreshToken
@@ -435,6 +435,93 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
         )
 })
 
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+    // to get data(username) from "url" we use "req.params"
+    const { username } = req.params
+
+    if (!username?.trim()) {
+        throw new ApiError(400, "username is missing")
+    }
+
+    // used to calculate details of the users profile like : Subscriber's count, channel subscribed or not, etc...
+    const channel = await User.aggregate([
+        // every curly bracket is a individual Pileline
+        {
+            // selecting the user from Db using "match" operator on the basis of "username" 
+            $match: {
+                username: username?.toLowerCase()
+            }
+        },
+        {
+            // things written within "$operator" is called fields
+            // to access fields in some other pipeline other than parent pipeline we start those fields with $ sign
+            // finding Subcriber count of user
+            $lookup: {
+                // brought from subscription.model.js :: their its exported with name "Subscription" but when it goes to Db it is converted to lowercase and plural so here we added "subscriptions"
+                from: "subscriptions",
+                localField: _id,
+
+                // brought from subscription.model.js 
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        {
+            // finding to how many channels user has subscribed to
+            $lookup: {
+                from: "subscriptions",
+                localField: _id,
+
+                // brought from subscription.model.js 
+                foreignField: "subscriber",
+                as: "subscribedTo"
+            }
+        },
+        {
+            // the "addFields" operator keeps the previous info of user intact with them it adds some more to it as well.
+            $addFields: {
+                // in above pipelines we colected all the documents for "subscribers" and "subscribedTo" count now here we will add them
+                subscribersCount: {
+                    $size: "$subscribers"
+                },
+                channelsSubscribedToCount: {
+                    $size: "$subscribedTo"
+                },
+                isSubscribed: {
+                    $cond: {
+                        if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                // we tell here which values have to be projected according to need, not all fields are shown their
+                fullName: 1,
+                username: 1,
+                subscribersCount: 1,
+                channelsSubscribedToCount: 1,
+                isSubscribed: 1,
+                avatar: 1,
+                coverImage: 1,
+                email: 1
+            }
+        }
+    ])
+
+    if(!channel?.length){
+        throw new ApiError(400, "Channel does not exists")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, channel[0], "User channel fetched successfully")
+    )
+})
+
 export {
     registerUser,
     loginUser,
@@ -444,5 +531,6 @@ export {
     getCurrentUser,
     updateAccountDetails,
     updateUserAvatar,
-    updateUserCoverImage
+    updateUserCoverImage,
+    getUserChannelProfile
 } 
