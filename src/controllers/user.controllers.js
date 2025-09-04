@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiErrors.js";
 import { User } from "../models/user.model.js"
-import { uploadOnCloudinary } from "../utils/cloudinary.js"
+import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
 
@@ -11,8 +11,9 @@ const generateAccessAndRefreshTokens = async (userId) => {
     try {
         //finding the user in DB on the basis of "userId" and generating access and refresh token
         const user = await User.findById(userId)
-        const accessToken = user.generateAccessToken()
-        const refreshToken = user.generateRefreshToken()
+    // generate tokens (synchronous jwt.sign in model)
+    const accessToken = user.generateAccessToken()
+    const refreshToken = user.generateRefreshToken()
 
         //saving refresh token in Db, when we try to save it in DB using "user" and not mongoose "User" then mongoose user model kicks in(password field) so to stop that we add "{validateBeforeSave: false}" to stop validating anything else.
         user.refreshToken = refreshToken
@@ -153,9 +154,9 @@ const loginUser = asyncHandler(async (req, res) => {
     //get data from frontend
     const { email, username, password } = req.body
 
-    //we can login on base of anyone : "username" or "email", if thats the case remove the other one from condition, here we are checking if both are not their then return error.
-    if (!username || !email) {
-        throw new ApiError(400, "username and email with password is required")
+    // Allow login with EITHER username OR email (at least one required)
+    if ((!username && !email) || !password) {
+        throw new ApiError(400, "username or email and password are required")
     }
 
     //if we successfully got "username" or "email" then check if they already exist in DB
@@ -238,52 +239,46 @@ const logoutUser = asyncHandler(async (req, res) => {
 })
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    // Refresh Token is being sent with the request
-    const incomingRefreshToken = req.cookie.accessToken || req.body.accessToken
+    // Prefer cookie; allow body fallback for manual testing
+    const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken
 
-    if (!incomingRefreshToken) {
-        throw new ApiError(401, "Unauthorized request")
+    if (!incomingRefreshToken || typeof incomingRefreshToken !== 'string') {
+        throw new ApiError(401, "Refresh token missing")
     }
 
-
-    // verify the incoming refresh token with the one saved in our DB
     try {
         const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
-
-        // getting all the details of the user through its id found by unwrapping "decodedToken"
         const user = await User.findById(decodedToken?._id)
-
         if (!user) {
-            throw new ApiError(401, "Invalid refresh token")
+            throw new ApiError(401, "Invalid refresh token (user not found)")
+        }
+        if (!user.refreshToken) {
+            throw new ApiError(401, "No refresh session active")
+        }
+        if (incomingRefreshToken !== user.refreshToken) {
+            throw new ApiError(401, "Refresh token mismatch or reused")
         }
 
-        if (incomingRefreshToken !== user?.refreshToken) {
-            throw new ApiError(401, "Refresh token has expired or used")
-        }
+        // Issue new tokens
+        const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
 
-        // generate new access and refresh token to the user
-        const { accessToken, newRefreshToken } = await generateAccessAndRefreshTokens(user._id)
-
-        const options = {
+        // Persist new refresh token (rotation) - generateAccessAndRefreshTokens already saved it
+        const cookieOptions = {
             httpOnly: true,
-            secure: true
+            secure: true,
+            // "secure: process.env.NODE_ENV === 'production'" is given when deploying to production, its says that cookies can be sent over only on HTTPS requests.
+            // secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
         }
 
         return res
             .status(200)
-            .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken", newRefreshToken, options)
-            .josn(
-                new ApiResponse(
-                    200,
-                    { accessToken, refreshToken: newRefreshToken },
-                    "Access token refreshed successfully"
-                )
-            )
+            .cookie("accessToken", accessToken, cookieOptions)
+            .cookie("refreshToken", refreshToken, cookieOptions)
+            .json(new ApiResponse(200, { accessToken, refreshToken }, "Access token refreshed successfully"))
     } catch (error) {
-        throw new ApiError(401, error?.message || "Invalid Refresh token")
+        throw new ApiError(401, error?.message || "Invalid refresh token")
     }
-
 })
 
 
@@ -430,8 +425,8 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
     // deleting old Cover Image file
     if (oldCoverImageUrlToBeDeleted) {
-        await deleteFromCloudinary(usersOldCoverImageFile);
-    } 
+        await deleteFromCloudinary(oldCoverImageUrlToBeDeleted);
+    }
 
     return res
         .status(200)
