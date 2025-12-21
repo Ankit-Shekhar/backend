@@ -1,9 +1,7 @@
 // require('dotenv').config({path: './.env'}); // Load's environment variables from .env file and makes them available everywhere required in the application. :: "As early as possible import the dotenv file and configure it"
 //import syntax for dotenv is an experimental feature, so to use that we have to configure it in package.json as ""dev": "nodemon -r dotenv/config --experimental-json-modules src/main.js""
-import dotenv from "dotenv"
 
-import mongoose from "mongoose";
-import { DB_NAME } from "./constants.js";
+import dotenv from "dotenv"
 import connectDb from "./db/index.js";
 import { app } from "./app.js";
 
@@ -36,7 +34,10 @@ connectDb()
 // //always use "async await" and "try catch" when dealing with database
 
 // // "ifis" statement is a way to write functions: below is an example.
+// // to use this approach we have to import mongoose and DB_NAME: 
 
+// import mongoose from "mongoose";
+// import { DB_NAME } from "./constants.js";
 // (async ()=>{
 //     try {
 //         await mongoose.connect(`${process.env.MONGODB_URL}/${DB_NAME}`)
