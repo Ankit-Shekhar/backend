@@ -30,7 +30,9 @@ app.use(cookieParser());
 //routes import
 import userRouter from './routes/user.routes.js'
 
+//before when we satrted the course we had all the routes and their controllers in a single file only, but now since we have separated routes and controllers into different files, we have to import the routes here in app.js as middlewares.
 //as now we have separated routes and controllers, so we have to import the routes as Middlewares, and so we use "app.use()"
 //when the "users" endpoint will be hitted the control will be passed to "userRouter" and it will take us to "user.route.js"
+
 app.use("/api/v1/users", userRouter) //this creates the url: http://localhost:8000/api/v1/users/register
 export { app }
