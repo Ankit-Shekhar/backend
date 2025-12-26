@@ -50,19 +50,19 @@ const registerUser = asyncHandler(async (req, res) => {
     const { email, fullName, username, password } = req.body || {};
     console.log("email: ", email);
     if (email === "") {
-        throw new ApiError(400, "This field is Mandatory")
+        throw new ApiError(400, "Email field is Mandatory")
     }
     console.log("username: ", username);
     if (username === "") {
-        throw new ApiError(400, "This field is Mandatory")
+        throw new ApiError(400, "Username field is Mandatory")
     }
     console.log("fullName: ", fullName);
     if (fullName === "") {
-        throw new ApiError(400, "This field is Mandatory")
+        throw new ApiError(400, "Full Name field is Mandatory")
     }
     console.log("password: ", password);
     if (password === "") {
-        throw new ApiError(400, "This field is Mandatory")
+        throw new ApiError(400, "Password field is Mandatory")
     }
 
     const existedUser = await User.findOne({
@@ -86,6 +86,10 @@ const registerUser = asyncHandler(async (req, res) => {
     // 2. the returning array has coverImage or not
     // 3. the returned coverImage has any properties or not
     // if all of these are true then its proved that we recieved the "coverImageLocalPath" and we can extract its path from their.
+    // * generally we get all the data in "req.body" but since we are using "multer" middleware to handle files so all the files data will be in "req.files" and text data will be in "req.body"
+    // * we have injected the "multer" middleware in the route section of "user.routes.js" file.
+    // * the data flow: users/register (route) -> multer middleware (to handle files) -> registerUser function (controller)
+    
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
         coverImageLocalPath = req.files.coverImage[0].path
     }
