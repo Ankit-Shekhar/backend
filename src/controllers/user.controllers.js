@@ -6,7 +6,8 @@ import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js
 import jwt from "jsonwebtoken"
 
 
-// writing "generateAccessAndRefreshTokens" function to generate them and use below 
+// writing "generateAccessAndRefreshTokens" function to generate them and use below.
+// we dont use "asyncHandler" here because this function is not a controller function, its just a utility function to generate tokens that is going to be used in other controllers.
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         //finding the user in DB on the basis of "userId" and generating access and refresh token
@@ -217,7 +218,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     // why can i access "req.user" here because before comming to this functin we are running a "verifyJWT" middleware which is saving all the details of the user using "User" from mongoose to "req.user"
 
     User.findByIdAndUpdate(
-        req.user._id,
+        await req.user._id,
         {
             $set: {
                 // deleting refreshToken from Db
