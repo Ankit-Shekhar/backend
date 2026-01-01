@@ -190,9 +190,22 @@ const loginUser = asyncHandler(async (req, res) => {
 
     // sending Cookies: to do so we need to enable some options
     // byDefault cookies can be modified in frontend, these 2 options make the cookies "readable and modifiable" only by the server and not in the frontend
+    /*
+    Previous (incorrect) cookie options:
     const options = {
         httpOnly: true,
         secure: true
+    }
+    */
+    const options = {
+        httpOnly: true,
+        // FIX: Previously used `secure: true` always, so cookies were NOT
+        // sent over local HTTP (Postman). That made `verifyJWT` see no token
+        // and throw. Make `secure` env-aware so dev/testing works over HTTP.
+        // In local/dev over HTTP, secure cookies won't be sent.
+        // Use secure only in production (HTTPS).
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
     }
 
     // once options are set return response with cookies with options enabled in it.
@@ -268,11 +281,22 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
 
         // Persist new refresh token (rotation) - generateAccessAndRefreshTokens already saved it
+        /*
+        Previous (incorrect) cookie options:
         const cookieOptions = {
             httpOnly: true,
             secure: true,
             // "secure: process.env.NODE_ENV === 'production'" is given when deploying to production, its says that cookies can be sent over only on HTTPS requests.
             // secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
+        }
+        */
+        const cookieOptions = {
+            httpOnly: true,
+            // FIX: Align refresh cookie security with login cookie. If `secure`
+            // is always true locally, Postman on HTTP won't send cookies and
+            // token rotation appears broken.
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax'
         }
 
