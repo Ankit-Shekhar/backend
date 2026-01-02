@@ -273,12 +273,12 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         if (!user.refreshToken) {
             throw new ApiError(401, "No refresh session active")
         }
-        if (incomingRefreshToken !== user.refreshToken) {
+        if (incomingRefreshToken !== user?.refreshToken) {
             throw new ApiError(401, "Refresh token mismatch or reused")
         }
 
         // Issue new tokens
-        const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
+        const { accessToken, newRefreshToken } = await generateAccessAndRefreshTokens(user._id)
 
         // Persist new refresh token (rotation) - generateAccessAndRefreshTokens already saved it
         /*
@@ -295,7 +295,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             httpOnly: true,
             // FIX: Align refresh cookie security with login cookie. If `secure`
             // is always true locally, Postman on HTTP won't send cookies and
-            // token rotation appears broken.
+            // token rotation appears brokenR
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax'
         }
@@ -303,8 +303,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         return res
             .status(200)
             .cookie("accessToken", accessToken, cookieOptions)
-            .cookie("refreshToken", refreshToken, cookieOptions)
-            .json(new ApiResponse(200, { accessToken, refreshToken }, "Access token refreshed successfully"))
+            .cookie("refreshToken", newRefreshToken, cookieOptions)
+            .json(new ApiResponse(200, { accessToken, newRefreshToken }, "Access token refreshed successfully"))
     } catch (error) {
         throw new ApiError(401, error?.message || "Invalid refresh token")
     }
