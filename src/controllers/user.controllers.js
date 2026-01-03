@@ -423,12 +423,12 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     const avatar = await uploadOnCloudinary(avatarLocalPath)
 
     if (!avatar.url) {
-        throw new ApiError(400, "Error while uploading on Cloudinary")
+        throw new ApiError(500, "Error while uploading on Cloudinary")
     }
 
     // getting users old avatar files url for deleting it after updating it with new one.
-    const usersOldAvatarFile = await User.findById(req.user?._id);
-    const oldAvatarUrlToBeDeleted = usersOldAvatarFile?.avatar;
+    const fetchingUserDetails = await User.findById(req.user?._id);
+    const oldAvatarUrlToBeDeleted = fetchingUserDetails?.avatar;
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
@@ -468,14 +468,14 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
     if (!coverImage.url) {
-        throw new ApiError(400, "Error while uploading on Cloudinary")
+        throw new ApiError(500, "Error while uploading on Cloudinary")
     }
 
     // getting users old Cover Image files url for deleting it after updating it with new one.
-    const usersOldCoverImageFile = await User.findById(req.user?._id);
-    const oldCoverImageUrlToBeDeleted = usersOldCoverImageFile?.coverImage;
+    const fetchingUserDetails = await User.findById(req.user?._id);
+    const oldCoverImageUrlToBeDeleted = fetchingUserDetails?.coverImage;
 
-    const user = await User.findByIdAndUpdate(
+   const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set:
