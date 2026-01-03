@@ -345,7 +345,9 @@ const forgotPassword = asyncHandler(async (req, res) => {
     const { username, email, newPassword } = req.body
 
     // getting access to all the details of the user, here we are not excluding password and refreshToken, so we have access to them as well.
-    const user = await User.findById(req.user?._id)
+    const user = await User.findOne({
+        $or: [{ username }, { email }]
+    })
 
     if(!user){
         throw new ApiError(404, "User does not exist")

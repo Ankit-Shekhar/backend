@@ -23,12 +23,12 @@ router.route("/register").post(
 )
 
 router.route("/login").post(loginUser)
+router.route("/forgot-password").post(forgotPassword)
 
 // secured routes :: means where user has tot be logged in to continue
 router.route("/logout").post(verifyJWT, logoutUser)
 router.route("/refresh-token").post(refreshAccessToken)
 router.route("/update-user-password").post(verifyJWT, changeCurrentPassword)
-router.route("/forgot-password").post(verifyJWT, forgotPassword)
 router.route("/fetch-current-user-details").get(verifyJWT, getCurrentUser)
 router.route("/update-account-details").post(verifyJWT, updateAccountDetails)
 
