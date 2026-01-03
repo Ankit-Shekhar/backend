@@ -256,6 +256,7 @@ const logoutUser = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, {}, "User logged out successfully"))
 })
 
+// when its used and by whome it is used? : if while using access token in the fronted the user gets "401 unauthorized error"(because if the session expired) then the frontend will call this function to get new access token using refresh token.
 const refreshAccessToken = asyncHandler(async (req, res) => {
     // Prefer cookie; allow body fallback for manual testing
     const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken
@@ -312,6 +313,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 
 // before running this function we will inject the "verifyJWT" middleware in the route section, so from their we will get the access of all the details of the user.
+// this functionality will be used through settings page of user account, where user will provide old password and new password to change his password.
 const changeCurrentPassword = asyncHandler(async (req, res) => {
     // accessing old and new password from req.body
     const { oldPassword, newPassword } = req.body
@@ -334,6 +336,38 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(new ApiResponse(200, {}, "Password changed successfully"))
+
+})
+
+// this functionality will be used while logging in , if the user forgets there password the the frontend will create a "forgot password / reset password" button and call this controller through route.
+const forgotPassword = asyncHandler(async (req, res) => {
+    // accessing old and new password from req.body
+    const { username, email, newPassword } = req.body
+
+    // getting access to all the details of the user, here we are not excluding password and refreshToken, so we have access to them as well.
+    const user = await User.findById(req.user?._id)
+
+    if(!user){
+        throw new ApiError(404, "User does not exist")
+    }
+
+    if(typeof newPassword !== 'string'){
+        throw new ApiError(400, "New password must be a string")
+    }
+
+if(user.username !== username || user.email !== email){
+    throw new ApiError(400, "Provided username or email doesn't match, please retry.") 
+}
+   
+    // updating Db's password field with newPassword.
+    user.password = newPassword
+
+    await user.save({ validateBeforeSave: false })
+
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Password updated successfully"))
 
 })
 
@@ -557,6 +591,7 @@ export {
     logoutUser,
     refreshAccessToken,
     changeCurrentPassword,
+    forgotPassword,
     getCurrentUser,
     updateAccountDetails,
     updateUserAvatar,
