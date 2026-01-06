@@ -520,7 +520,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         {
             // things written within "$operator" is called fields
             // to access fields in some other pipeline other than parent pipeline we start those fields with $ sign
-            // finding Subcriber count of user
+            // finding Subcriber count of user( How many subscribers a user[channel] has? )
             $lookup: {
                 // brought from subscription.model.js :: their its exported with name "Subscription" but when it goes to Db it is converted to lowercase and plural so here we added "subscriptions"
                 from: "subscriptions",
@@ -545,7 +545,8 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         {
             // the "addFields" operator keeps the previous info of user intact with them it adds some more to it as well.
             $addFields: {
-                // in above pipelines we colected all the documents for "subscribers" and "subscribedTo" count now here we will add them
+                // in above pipelines we collected all the documents for "subscribers" and "subscribedTo" now here we count the number of documents we have( to find the number of subscribers and the number of channels subscribed to ) and will join "the required details we got now to user profile according to our need".
+
                 subscribersCount: {
                     $size: "$subscribers"
                 },
@@ -554,6 +555,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
                 },
                 isSubscribed: {
                     $cond: {
+                        // is my id present in the list of "subscriber" within "subscribers" ( array[] ) of this channel?
                         if: { $in: [req.user?._id, "$subscribers.subscriber"] },
                         then: true,
                         else: false
@@ -563,7 +565,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
         {
             $project: {
-                // we tell here which values have to be projected according to need, not all fields are shown their
+                // we tell here which values have to be projected when "getUserChannelProfile" controller is called, according to need, not all fields are shown their.
                 fullName: 1,
                 username: 1,
                 subscribersCount: 1,
