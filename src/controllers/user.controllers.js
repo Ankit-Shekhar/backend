@@ -90,7 +90,7 @@ const registerUser = asyncHandler(async (req, res) => {
     // * generally we get all the data in "req.body" but since we are using "multer" middleware to handle files so all the files data will be in "req.files" and text data will be in "req.body"
     // * we have injected the "multer" middleware in the route section of "user.routes.js" file.
     // * the data flow: users/register (route) -> multer middleware (to handle files) -> registerUser function (controller)
-    
+
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
         coverImageLocalPath = req.files.coverImage[0].path
     }
@@ -349,18 +349,18 @@ const forgotPassword = asyncHandler(async (req, res) => {
         $or: [{ username }, { email }]
     })
 
-    if(!user){
+    if (!user) {
         throw new ApiError(404, "User does not exist")
     }
 
-    if(typeof newPassword !== 'string'){
+    if (typeof newPassword !== 'string') {
         throw new ApiError(400, "New password must be a string")
     }
 
-if(user.username !== username || user.email !== email){
-    throw new ApiError(400, "Provided username or email doesn't match, please retry.") 
-}
-   
+    if (user.username !== username || user.email !== email) {
+        throw new ApiError(400, "Provided username or email doesn't match, please retry.")
+    }
+
     // updating Db's password field with newPassword.
     user.password = newPassword
 
@@ -475,7 +475,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     const fetchingUserDetails = await User.findById(req.user?._id);
     const oldCoverImageUrlToBeDeleted = fetchingUserDetails?.coverImage;
 
-   const user = await User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set:
@@ -578,15 +578,66 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         }
     ])
 
-    if(!channel?.length){
+    if (!channel?.length) {
         throw new ApiError(400, "Channel does not exists")
     }
 
     return res
-    .status(200)
-    .json(
-        new ApiResponse(200, channel[0], "User channel fetched successfully")
-    )
+        .status(200)
+        .json(
+            new ApiResponse(200, channel[0], "User channel fetched successfully")
+        )
+})
+
+const getUserWatchHistory = asyncHandler(async (req, res) => {
+    const user = await User.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(req.user?._id)
+            }
+        },
+        {
+            // got multiple video documents in "watchHistory" array within user document.
+            $lookup: {
+                from: "videos",
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                // writing sub-pipelines to the owner of every video watched.
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            // sub-pipeline to project only required fields of owner.
+                            pipeline: [
+                                {
+                                    $project: {
+                                        fullName: 1,
+                                        username: 1,
+                                        avatar: 1,
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        // this pipeline is written just for making it easy for the frontend to access owner details without using array index. if this was not done then to access "owner" details : owner array can be called and then [0] index can be used to access owner details, by using the $first operator.
+                        $addFields: {
+                            $first: "$owner"
+                        }
+                    }
+                ]
+            }
+        }
+    ])
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, user[0]?.watchHistory || [], "User watch history fetched successfully")
+        )
 })
 
 export {
@@ -600,5 +651,6 @@ export {
     updateAccountDetails,
     updateUserAvatar,
     updateUserCoverImage,
-    getUserChannelProfile
+    getUserChannelProfile,
+    getUserWatchHistory
 } 
