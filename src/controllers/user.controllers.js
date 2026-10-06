@@ -6,7 +6,7 @@ import { uploadOnCloudinary, deleteFromCloudinary } from "../utils/cloudinary.js
 import jwt from "jsonwebtoken"
 
 
-// writing "generateAccessAndRefreshTokens" function to generate them and use below.
+// writing "generateAccessAndRefreshTokens" function to generate them and use below:
 // we dont use "asyncHandler" here because this function is not a controller function, its just a utility function to generate tokens that is going to be used in other controllers.
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
